@@ -1,0 +1,339 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/game_provider.dart';
+import '../widgets/tube_widget.dart';
+import '../widgets/ball_widget.dart';
+import '../logic/game_logic.dart';
+
+class GameScreen extends StatefulWidget {
+  final int? initialLevel;
+  const GameScreen({Key? key, this.initialLevel}) : super(key: key);
+
+  @override
+  State<GameScreen> createState() => _GameScreenState();
+}
+
+class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
+  // GlobalKeys to get positions
+  final Map<int, GlobalKey> _tubeKeys = {};
+  
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => GameProvider()..init(widget.initialLevel), // Access widget.initialLevel
+      child: Scaffold(
+        body: Consumer<GameProvider>(
+          builder: (context, game, child) {
+            if (game.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            
+            return Stack(
+              children: [
+                // Background
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFF1E1E2C), Color(0xFF2D2D44)],
+                    ),
+                  ),
+                ),
+                
+                // Content
+                SafeArea(
+                  child: Column(
+                    children: [
+                      // HUD
+                      _buildHUD(context, game),
+                      
+                      const Spacer(),
+                      
+                      // Board
+                      Center(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                             // Adjust ball size based on screen width
+                             double screenWidth = constraints.maxWidth;
+                             double tubeWidth = 60;
+                             if (game.state.tubes.length > 5 && screenWidth < 400) {
+                               tubeWidth = 50; 
+                             }
+                             
+                             return Wrap(
+                              spacing: 16,
+                              runSpacing: 40,
+                              alignment: WrapAlignment.center,
+                              children: List.generate(game.state.tubes.length, (index) {
+                                final tube = game.state.tubes[index];
+                                final isSelected = game.selectedTubeIndex == index;
+                                
+                                // Check if valid target
+                                bool isValidTarget = false;
+                                if (game.selectedTubeIndex != null && game.selectedTubeIndex != index) {
+                                  isValidTarget = GameLogic.isValidMove(game.state, game.selectedTubeIndex!, index);
+                                }
+                                
+                                final isHintTarget = game.hintTargetIndex == index;
+                                
+                                // Prepare Key
+                                if (!_tubeKeys.containsKey(index)) {
+                                  _tubeKeys[index] = GlobalKey();
+                                }
+                                
+                                return TubeWidget(
+                                  key: _tubeKeys[index],
+                                  tube: tube,
+                                  isSelected: isSelected,
+                                  isValidTarget: isValidTarget,
+                                  isHintTarget: isHintTarget,
+                                  hiddenTopCount: (game.animatingFromIndex == index) ? game.animatingCount : 0,
+                                  onTap: () => _handleInteraction(context, game, index),
+                                  width: tubeWidth,
+                                  ballSize: tubeWidth - 10,
+                                );
+                              }),
+                            );
+                          }
+                        ),
+                      ),
+                      
+                      const Spacer(),
+                    ],
+                  ),
+                ),
+                
+                if (game.state.isWin)
+                  Container(
+                    color: Colors.black.withOpacity(0.85),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.emoji_events, color: Colors.amber, size: 80),
+                          const SizedBox(height: 20),
+                          const Text("LEVEL COMPLETED!", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                          Text("Moves: ${game.state.moves}", style: const TextStyle(color: Colors.white70, fontSize: 18)),
+                          const SizedBox(height: 30),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                            icon: const Icon(Icons.play_arrow),
+                            onPressed: () => game.nextLevel(),
+                            label: const Text("Next Level"),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHUD(BuildContext context, GameProvider game) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+               Text("LEVEL ${game.state.level}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
+               Text("Moves: ${game.state.moves}", style: const TextStyle(color: Colors.white70)),
+            ],
+          ),
+          Row(
+            children: [
+              IconButton(icon: const Icon(Icons.undo), color: Colors.white, onPressed: game.undo, tooltip: "Undo"),
+              IconButton(icon: const Icon(Icons.refresh), color: Colors.white, onPressed: game.resetLevel, tooltip: "Reset"),
+              IconButton(icon: const Icon(Icons.lightbulb_outline), color: Colors.amber, onPressed: game.getHint, tooltip: "Hint"),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+  
+  void _handleInteraction(BuildContext context, GameProvider game, int index) {
+    game.handleInteraction(index, onMoveAuthorized: (from, to, count) {
+      _animateMove(context, game, from, to, count);
+    });
+  }
+
+  void _animateMove(BuildContext context, GameProvider game, int from, int to, int count) {
+    // 1. Get Positions
+    final RenderBox? fromBox = _tubeKeys[from]?.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? toBox = _tubeKeys[to]?.currentContext?.findRenderObject() as RenderBox?;
+    
+    if (fromBox == null || toBox == null) {
+      game.executeMove(from, to);
+      return;
+    }
+    
+    final fromPos = fromBox.localToGlobal(Offset.zero);
+    final toPos = toBox.localToGlobal(Offset.zero);
+    
+    // 2. Ball Details
+    // We can assume RenderBox size matches TubeWidget logic: 
+    // Tube Width is ~50-60.
+    // We need exact Ball size and positions. 
+    // This is tricky without exposing layout logic. 
+    // Approximation:
+    final double tubeWidth = fromBox.size.width;
+    final double ballSize = tubeWidth - 10;
+    
+    final ballsInFrom = game.state.tubes[from].balls.length;
+    final ballsInTo = game.state.tubes[to].balls.length; // Before move
+    
+    // Top ball Y in From
+    // Note: TubeWidget uses Stack. bottom: 8.0 + index * ballSize
+    // In global coords: (Box Top + Box Height) - (bottom offset + ballSize)
+    // Actually easier: Box Top + Box Height - 8 - (index+1)*ballSize? No
+    
+    // Let's rely on standard calculation:
+    // Tube Height = ~ (Capacity * BallSize) + 16.0
+    // But TubeWidget might be taller due to "Lift".
+    // Let's use the bottom anchor.
+    
+    final double bottomPadding = 8.0;
+    
+    OverlayEntry? entry;
+    
+    // Create Animation Controller
+    final controller = AnimationController(
+      vsync: this, // Mixin required
+      duration: const Duration(milliseconds: 600),
+    );
+    
+    // Animation Curves
+    // Phase 1: Up
+    final animUp = CurvedAnimation(
+       parent: controller, 
+       curve: const Interval(0.0, 0.4, curve: Curves.easeOut)
+    );
+    // Phase 2: Peer (Travel)
+    final animMove = CurvedAnimation(
+       parent: controller, 
+       curve: const Interval(0.2, 0.8, curve: Curves.easeInOut)
+    );
+    // Phase 3: Drop
+    final animDrop = CurvedAnimation(
+       parent: controller, 
+       curve: const Interval(0.6, 1.0, curve: Curves.easeIn)
+    );
+
+    // Color
+    final color = game.state.tubes[from].balls.last.color;
+    
+    entry = OverlayEntry(builder: (context) {
+      return AnimatedBuilder(
+         animation: controller,
+         builder: (context, child) {
+            // Calculate positions dynamically based on animation values
+            
+            // "Lifted" state of From Tube implies ball was already up +30.
+            // But we start animation from that "Selected" state? 
+            // Or from resting state?
+            // When we deselect, the tube might snap down. 
+            // Let's assume start position is the "Lifted" position if it was selected.
+            // GameProvider deselects immediately upon authorizing move.
+            // So TubeWidget snaps back.
+            // We should start from "Resting Top" or "Lifted Top". 
+            // Visually smoother if we start from Lifted.
+            // But Provider state changed to null selection.
+            // This is a race.
+            // It's fine to start from "In Tube" position and fly up fast.
+            
+            double startX = fromPos.dx + (tubeWidth - ballSize) / 2;
+            double startY = fromPos.dy + fromBox.size.height - bottomPadding - (ballsInFrom * ballSize); // Top of stack
+             // Wait, ballsInFrom includes the moving balls.
+             // If we move 2 balls, the top one is at index N-1, next at N-2.
+             // We should animate them as a cluster or individually? 
+             // "Group" moving together.
+             
+            double endX = toPos.dx + (tubeWidth - ballSize) / 2;
+            
+            // Destination Y: Stack up on existing balls
+            double destY = toPos.dy + toBox.size.height - bottomPadding - ((ballsInTo + count) * ballSize);
+            // This is where the TOP of the group will land.
+             
+            // Hover Height: 20px above the highest tube top
+            double hoverY = (fromPos.dy < toPos.dy ? fromPos.dy : toPos.dy) - 50; 
+            
+            // Current X
+             double currentX = startX + (endX - startX) * animMove.value;
+             
+             // Current Y
+             // 1. Go to Hover
+             // 2. Stay at Hover
+             // 3. Drop
+             // We can interpolate.
+             
+             double currentY;
+             if (controller.value < 0.5) {
+                // Moving Up to Hover
+                // Simple lerp: StartY -> HoverY
+                // But we also move X during this?
+                // Better: 
+                // Y = (1-val)*StartDate + val*Hover
+                // But we want it to stay at Hover for the middle part.
+                
+                // Let's use explicit phases.
+             }
+             
+             // Simpler Math:
+             // Y = StartY * (1-up) + HoverY * up; (During up phase)
+             // Then drop phase takes over.
+             
+             double upProgress = animUp.value;
+             double dropProgress = animDrop.value;
+             
+             // Y Logic:
+             // Starts at StartY.
+             // Goes to HoverY based on upProgress.
+             // Stays at HoverY.
+             // Goes to DestY based on dropProgress.
+             
+             // Correct: Y = (StartY * (1-upProgress) + HoverY * upProgress) 
+             //          - ( (HoverY - DestY) * dropProgress ) ?
+             // Actually: 
+             // Pos = Lerp(Start, Hover, up) 
+             // If drop starts, Pos = Lerp(CurrentHover, Dest, drop)
+             // Since up finishes before drop finishes.
+             
+             double yPhase1 = startY + (hoverY - startY) * upProgress;
+             if (dropProgress > 0) {
+                currentY = yPhase1 + (destY - hoverY) * dropProgress; // Note: destY > hoverY usually
+             } else {
+                currentY = yPhase1;
+             }
+
+             return Positioned(
+                left: currentX,
+                top: currentY,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(count, (i) => BallWidget(color: color, size: ballSize)),
+                ),
+             );
+         } 
+      );
+    });
+    
+    Overlay.of(context).insert(entry);
+    
+    controller.forward().then((_) {
+       entry?.remove();
+       game.executeMove(from, to);
+    });
+  }
+}
