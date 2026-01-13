@@ -209,27 +209,27 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     OverlayEntry? entry;
     
     // Create Animation Controller
-    // SUPER SNAP duration
+    // SNAPPY but CLEAN duration
     final controller = AnimationController(
       vsync: this, 
       duration: const Duration(milliseconds: 300), 
     );
     
     // Animation Curves
-    // Phase 1: Up - Springy
+    // Phase 1: Up - Fast launch, no wobble
     final animUp = CurvedAnimation(
        parent: controller, 
-       curve: const Interval(0.0, 0.5, curve: Curves.elasticOut)
+       curve: const Interval(0.0, 0.4, curve: Curves.easeOutQuad)
     );
-    // Phase 2: Peer (Travel) - Sharp
+    // Phase 2: Peer (Travel) - Direct
     final animMove = CurvedAnimation(
        parent: controller, 
-       curve: const Interval(0.1, 0.8, curve: Curves.easeInOutBack)
+       curve: const Interval(0.1, 0.9, curve: Curves.easeInOutCubic)
     );
-    // Phase 3: Drop - Bounce on lands
+    // Phase 3: Drop - Clean landing
     final animDrop = CurvedAnimation(
        parent: controller, 
-       curve: const Interval(0.4, 1.0, curve: Curves.bounceOut)
+       curve: const Interval(0.5, 1.0, curve: Curves.easeInCubic)
     );
 
     // Color

@@ -87,8 +87,8 @@ class TubeWidget extends StatelessWidget {
                    }
 
                    return AnimatedPositioned(
-                     duration: const Duration(milliseconds: 300), // Slightly longer for elastic to settle
-                     curve: Curves.elasticOut,
+                     duration: const Duration(milliseconds: 200),
+                     curve: Curves.easeOutBack,
                      bottom: bottomPos,
                      left: (width - (ballSize - 10)) / 2, // Center horizontally
                      child: BallWidget(
