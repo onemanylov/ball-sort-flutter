@@ -19,7 +19,7 @@ class BallSortApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: const Color(0xFF1E1E2C),
         useMaterial3: true,
-        textTheme: GoogleFonts.titanOneTextTheme(
+        textTheme: GoogleFonts.snigletTextTheme(
           ThemeData(brightness: Brightness.dark).textTheme,
         ),
       ),
