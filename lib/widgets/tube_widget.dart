@@ -29,7 +29,8 @@ class TubeWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     // Height calculation
     // Increase padding to fit the round bottom better
-    final tubeHeight = (tube.capacity * ballSize) + 32.0;
+    // Reduced padding to +12 (was +32, originally +16) to reduce top whitespace
+    final tubeHeight = (tube.capacity * ballSize) + 12.0;
 
     return GestureDetector(
       onTap: onTap,

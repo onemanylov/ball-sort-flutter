@@ -308,8 +308,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                    // Actually, simpler: Hover is 10px above the visual top of the tube glass?
                    // No, TubeWidget layout uses Stack from bottom. 
                    // Hover Bottom = Tube Height + 10.
-                   // Tube Height in TubeWidget is calculated as (capacity * paramBallSize) + 32.
-                   double estimatedTubeHeight = (game.state.tubes[from].capacity * paramBallSize) + 32.0;
+                   // Tube Height in TubeWidget is calculated as (capacity * paramBallSize) + 12.
+                   double estimatedTubeHeight = (game.state.tubes[from].capacity * paramBallSize) + 12.0;
                    double hoverBottom = estimatedTubeHeight + 10.0;
                    // Box Height matches estimatedTubeHeight + 60 (hover space).
                    // Let's rely on Box bottom.
