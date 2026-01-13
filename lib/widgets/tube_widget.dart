@@ -28,7 +28,8 @@ class TubeWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Height calculation
-    final tubeHeight = (tube.capacity * ballSize) + 16.0;
+    // Increase padding to fit the round bottom better
+    final tubeHeight = (tube.capacity * ballSize) + 32.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -41,19 +42,23 @@ class TubeWidget extends StatelessWidget {
             height: tubeHeight + 60, // Sufficient space for hover
             child: Stack(
               alignment: Alignment.bottomCenter,
-              clipBehavior: Clip.none,
+              clipBehavior: Clip.none, // Allow hover to go out
               children: [
                 // The Tube Glass (Custom Shape)
-                CustomPaint(
-                  size: Size(width, tubeHeight),
-                  painter: _TubePainter(
-                    glassColor: Colors.white.withValues(alpha: 0.05),
-                    borderColor: isHintTarget 
-                        ? Colors.purpleAccent 
-                        : (isValidTarget ? Colors.greenAccent.withValues(alpha: 0.8) : (isSelected ? Colors.amber.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.3))),
-                    borderWidth: (isValidTarget || isSelected || isHintTarget) ? 3 : 2,
-                    showShadow: isValidTarget || isHintTarget,
-                    shadowColor: isHintTarget ? Colors.purpleAccent.withValues(alpha: 0.6) : Colors.greenAccent.withValues(alpha: 0.3),
+                // We align it to bottom so it grows up
+                Positioned(
+                  bottom: 0,
+                  child: CustomPaint(
+                    size: Size(width, tubeHeight),
+                    painter: _TubePainter(
+                      glassColor: Colors.white.withValues(alpha: 0.05),
+                      borderColor: isHintTarget 
+                          ? Colors.purpleAccent 
+                          : (isValidTarget ? Colors.greenAccent.withValues(alpha: 0.8) : (isSelected ? Colors.amber.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.3))),
+                      borderWidth: (isValidTarget || isSelected || isHintTarget) ? 3 : 2,
+                      showShadow: isValidTarget || isHintTarget,
+                      shadowColor: isHintTarget ? Colors.purpleAccent.withValues(alpha: 0.6) : Colors.greenAccent.withValues(alpha: 0.3),
+                    ),
                   ),
                 ),
                 
@@ -68,12 +73,10 @@ class TubeWidget extends StatelessWidget {
                    bool isTopBall = index == tube.balls.length - 1;
                    bool isHovering = isSelected && isTopBall;
                    
-                   double bottomPos = 8.0 + (index * ballSize);
+                   // Lift bottom base to account for the round bottom of the tube
+                   double bottomPos = 12.0 + (index * ballSize);
+                   
                    if (isHovering) {
-                     // Fly UP above the flask
-                     // Tube height is tubeHeight. We want to be above it.
-                     // Current bottomPos is relative to bottom of stack.
-                     // easy way: set bottomPos to tubeHeight + padding
                      bottomPos = tubeHeight + 10.0; 
                    }
 
@@ -113,6 +116,15 @@ class _TubePainter extends CustomPainter {
   });
 
   @override
+  bool shouldRepaint(covariant _TubePainter oldDelegate) {
+     return oldDelegate.borderColor != borderColor || 
+            oldDelegate.borderWidth != borderWidth ||
+            oldDelegate.glassColor != glassColor ||
+            oldDelegate.showShadow != showShadow ||
+            oldDelegate.shadowColor != shadowColor;
+  }
+
+  @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = glassColor
@@ -121,7 +133,7 @@ class _TubePainter extends CustomPainter {
     final borderPaint = Paint()
       ..color = borderColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = borderWidth;
+      ..strokeWidth = borderWidth; // No StrokeCap needed for loop
       
     if (showShadow) {
       final shadowPaint = Paint()
@@ -130,86 +142,98 @@ class _TubePainter extends CustomPainter {
         ..strokeWidth = borderWidth + 4
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
       
-      // Draw shadow path first
       final shadowPath = _getTubePath(size);
       canvas.drawPath(shadowPath, shadowPaint);
     }
     
     final path = _getTubePath(size);
     
-    // Draw Glass Fill
     canvas.drawPath(path, paint);
-    
-    // Draw Border
     canvas.drawPath(path, borderPaint);
     
-    // Draw subtle reflection/shine
+    // Shine
     final shinePath = Path();
-    shinePath.moveTo(size.width * 0.2, 10);
-    shinePath.lineTo(size.width * 0.2, size.height - 20);
-    
+    shinePath.moveTo(size.width * 0.25, 12);
+    shinePath.lineTo(size.width * 0.25, size.height - 25);
     final shinePaint = Paint()
       ..shader = LinearGradient(
-        colors: [Colors.white.withValues(alpha: 0.1), Colors.transparent],
+        colors: [Colors.white.withValues(alpha: 0.15), Colors.transparent],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round; // Round shine ends
       
     canvas.drawPath(shinePath, shinePaint);
   }
   
   Path _getTubePath(Size size) {
     final path = Path();
-    final double lipHeight = 8.0;
-    final double lipOverhang = 4.0;
-    final double cornerRadius = size.width / 2; // Semi-circle bottom
+    // Dimensions
+    final double lipTotalWidth = size.width; 
+    final double lipHeight = 10.0;
+    final double lipOverhang = 6.0; // How much it sticks out
+    final double bodyWidth = size.width - (lipOverhang * 2);
+    final double cornerRadiusLow = bodyWidth / 2; // Full round bottom
+    final double neckRadius = 4.0; // Smooth transition from lip to body
     
-    // Start Top Left Lip
-    path.moveTo(0, 0); // Top Left Outer
-    path.lineTo(size.width, 0); // Top Right Outer
-    path.lineTo(size.width, lipHeight); // Lip visual height (we don't cut back in, we just draw the boxish lip?)
+    // Start Top Left of Lip
+    // We want rounded corners on the lip itself too? "No hard corners"
+    final double lipCornerRadius = 3.0;
+
+    // Start at Top-Center to be symmetrical (easier debugging?) No, path is fine.
+    // 1. Top Left Lip Corner
+    path.moveTo(lipCornerRadius, 0);
+    path.lineTo(size.width - lipCornerRadius, 0);
+    path.quadraticBezierTo(size.width, 0, size.width, lipCornerRadius);
     
-    // Actually, user wants "Flask with Lip". 
-    // Usually: Wide top, necks in slightly? Or just straight tube with rim?
-    // "Tube" puzzle usually straight sides.
-    // Lip means:
-    //  ____
-    // |    |  <-- Rim
-    // |    |
-    // |    |
-    // |____|
+    // 2. Right Side Lip Down
+    path.lineTo(size.width, lipHeight - lipCornerRadius);
+    path.quadraticBezierTo(size.width, lipHeight, size.width - lipCornerRadius, lipHeight);
     
-    // Let's do:
-    // Move to Lip Top Left (-overhang) ? No, we are bounded by size.width.
-    // Let's assume size.width includes the lip.
-    // Main body is narrower.
+    // 3. Curve IN to Body (Neck)
+    // We are at (W - corner, H_lip). Target is (W - overhang, H_lip + neck).
+    // Control Point approx (W-overhang, H_lip).
+    // Actually, simple line in? User wants smooth.
+    // Let's go to Body Start.
+    path.quadraticBezierTo(
+      size.width - lipOverhang, lipHeight, // Control
+      size.width - lipOverhang, lipHeight + neckRadius // End
+    );
     
-    double bodyWidth = size.width - (lipOverhang * 2);
-    // Left Start of Lip
-    path.moveTo(0, 0);
-    path.lineTo(size.width, 0);
-    path.lineTo(size.width, lipHeight);
-    // Neck in
-    path.lineTo(size.width - lipOverhang, lipHeight); 
-    // Go down
-    path.lineTo(size.width - lipOverhang, size.height - cornerRadius);
-    // Arc Close Bottom
+    // 4. Down Right Body
+    path.lineTo(size.width - lipOverhang, size.height - cornerRadiusLow);
+    
+    // 5. Bottom Arc
     path.arcToPoint(
-      Offset(lipOverhang, size.height - cornerRadius),
-      radius: Radius.circular(cornerRadius),
+      Offset(lipOverhang, size.height - cornerRadiusLow),
+      radius: Radius.circular(cornerRadiusLow),
       clockwise: true,
     );
-    // Go Up Left Side
-    path.lineTo(lipOverhang, lipHeight);
-    // Flare out
-    path.lineTo(0, lipHeight);
-    path.close();
     
+    // 6. Up Left Body
+    path.lineTo(lipOverhang, lipHeight + neckRadius);
+    
+    // 7. Curve OUT to Lip
+    path.quadraticBezierTo(
+      lipOverhang, lipHeight,
+      lipCornerRadius, lipHeight
+    );
+    
+    // 8. Left Side Lip Up
+    path.lineTo(0, lipHeight - lipCornerRadius); // Wait, x=0? Yes, we started at x=radius.
+    // Wait, step 7 ended at x=radius.
+    // We need to go up to x=0.
+    // My Step 7 ended at (radius, lipHeight). 
+    // Wait, the lip starts at 0.
+    // Actually, let's trace cleaner.
+    
+    // Re-do Left Lip Side Up
+    path.lineTo(0, lipCornerRadius);
+    path.quadraticBezierTo(0, 0, lipCornerRadius, 0);
+    
+    path.close();
     return path;
-  }
-
-  @override
-  bool shouldRepaint(covariant _TubePainter oldDelegate) {
-     return oldDelegate.borderColor != borderColor || oldDelegate.borderWidth != borderWidth;
   }
 }
