@@ -85,10 +85,12 @@ class TubeWidget extends StatelessWidget {
                      duration: const Duration(milliseconds: 200),
                      curve: Curves.easeOutBack,
                      bottom: bottomPos,
-                     left: (width - (ballSize - 10)) / 2, // Center horizontally
+                     // Center horizontally based on new size
+                     left: (width - (ballSize - 3)) / 2, 
                      child: BallWidget(
                        color: tube.balls[index].color,
-                       size: ballSize - 10, 
+                       // Reduce gap to 3px (was 10px padding before)
+                       size: ballSize - 3, 
                      ),
                    );
                 }),
