@@ -8,47 +8,54 @@ class BallWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final assetPath = _getAssetPath(color);
+
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 4,
-            offset: const Offset(2, 2),
-          ),
-        ],
-        gradient: RadialGradient(
-          colors: [
-            color.withOpacity(0.9),
-            color,
-            color.withOpacity(0.8), // shadow side
-          ],
-          center: Alignment.topLeft,
-          radius: 1.2,
-        ),
-      ),
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // Shine reflection
+          // Shadow Layer (Simple offset darker image)
           Positioned(
-            top: size * 0.15,
-            left: size * 0.15,
-            child: Container(
-              width: size * 0.25,
-              height: size * 0.25,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.6),
-                shape: BoxShape.circle,
-                boxShadow: const [BoxShadow(blurRadius: 2, color: Colors.white)],
+            top: 3,
+            left: 2,
+            child: Opacity(
+              opacity: 0.3,
+              child: Image.asset(
+                assetPath,
+                width: size,
+                height: size,
+                color: Colors.black, // Tint shadow black
+                fit: BoxFit.contain,
               ),
             ),
+          ),
+          // Main Candy
+          Image.asset(
+            assetPath,
+            width: size,
+            height: size,
+            fit: BoxFit.contain,
           ),
         ],
       ),
     );
+  }
+
+  String _getAssetPath(Color color) {
+    if (color == Colors.red) return 'assets/1.png';
+    if (color == Colors.blue) return 'assets/2.png';
+    if (color == Colors.green) return 'assets/3.png';
+    if (color == Colors.yellow) return 'assets/4.png';
+    if (color == Colors.purple) return 'assets/5.png';
+    if (color == Colors.orange) return 'assets/6.png';
+    if (color == Colors.pink) return 'assets/7.png';
+    if (color == Colors.teal) return 'assets/8.png';
+    // Fallbacks or extras
+    if (color == Colors.cyan) return 'assets/9.png';
+    if (color == Colors.lime) return 'assets/10.png';
+    
+    return 'assets/1.png'; // Default
   }
 }
