@@ -2,7 +2,7 @@
 
 A beautiful, addictive ball sorting puzzle game built with Flutter.
 
-<img src="assets/gameplay_preview.png" width="300" alt="Game Gameplay Preview">
+<img src="assets/gameplay_preview.png" width="200" alt="Game Gameplay Preview">
 
 ## Features
 
