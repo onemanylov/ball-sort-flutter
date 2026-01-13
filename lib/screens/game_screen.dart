@@ -54,47 +54,86 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       Center(
                         child: LayoutBuilder(
                           builder: (context, constraints) {
-                             // Adjust ball size based on screen width
+                             // 1. Determine sizes
                              double screenWidth = constraints.maxWidth;
                              double tubeWidth = 60;
+                             double spacing = 20; 
+                             double runSpacing = 40;
+                             
                              if (game.state.tubes.length > 5 && screenWidth < 400) {
                                tubeWidth = 50; 
                              }
                              
-                             return Wrap(
-                              spacing: 16,
-                              runSpacing: 40,
-                              alignment: WrapAlignment.center,
-                              children: List.generate(game.state.tubes.length, (index) {
-                                final tube = game.state.tubes[index];
-                                final isSelected = game.selectedTubeIndex == index;
-                                
-                                // Check if valid target
-                                bool isValidTarget = false;
-                                if (game.selectedTubeIndex != null && game.selectedTubeIndex != index) {
-                                  isValidTarget = GameLogic.isValidMove(game.state, game.selectedTubeIndex!, index);
-                                }
-                                
-                                final isHintTarget = game.hintTargetIndex == index;
-                                
-                                // Prepare Key
-                                if (!_tubeKeys.containsKey(index)) {
-                                  _tubeKeys[index] = GlobalKey();
-                                }
-                                
-                                return TubeWidget(
-                                  key: _tubeKeys[index],
-                                  tube: tube,
-                                  isSelected: isSelected,
-                                  isValidTarget: isValidTarget,
-                                  isHintTarget: isHintTarget,
-                                  hiddenTopCount: (game.animatingFromIndex == index) ? game.animatingCount : 0,
-                                  onTap: () => _handleInteraction(context, game, index),
-                                  width: tubeWidth,
-                                  ballSize: tubeWidth - 12,
-                                );
-                              }),
-                            );
+                             // 2. Calculate Balanced Layout
+                             double itemFullWidth = tubeWidth + spacing;
+                             int totalTubes = game.state.tubes.length;
+                             
+                             // Max columns that physically fit
+                             int maxCols = (screenWidth / itemFullWidth).floor();
+                             if (maxCols < 2) maxCols = 2; 
+                             if (maxCols > totalTubes) maxCols = totalTubes;
+
+                             // Calculate rows needed if we filled maxCols
+                             int neededRows = (totalTubes / maxCols).ceil();
+                             if (neededRows < 1) neededRows = 1;
+
+                             // Find balanced columns count (e.g., 6 tubes / 2 rows = 3 cols)
+                             int balancedCols = (totalTubes / neededRows).ceil();
+                             
+                             // Chunking
+                             List<Widget> rows = [];
+                             for (int i = 0; i < totalTubes; i += balancedCols) {
+                               int end = (i + balancedCols < totalTubes) ? i + balancedCols : totalTubes;
+                               
+                               // Get indices for this row
+                               List<int> chunkIndices = List.generate(end - i, (k) => i + k);
+                               
+                               rows.add(
+                                 Row(
+                                   mainAxisAlignment: MainAxisAlignment.center,
+                                   children: chunkIndices.map((index) {
+                                      final tube = game.state.tubes[index];
+                                      final isSelected = game.selectedTubeIndex == index;
+                                      
+                                      bool isValidTarget = false;
+                                      if (game.selectedTubeIndex != null && game.selectedTubeIndex != index) {
+                                        isValidTarget = GameLogic.isValidMove(game.state, game.selectedTubeIndex!, index);
+                                      }
+                                      
+                                      final isHintTarget = game.hintTargetIndex == index;
+                                      
+                                      if (!_tubeKeys.containsKey(index)) {
+                                        _tubeKeys[index] = GlobalKey();
+                                      }
+
+                                      return Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: spacing / 2),
+                                        child: TubeWidget(
+                                          key: _tubeKeys[index],
+                                          tube: tube,
+                                          isSelected: isSelected,
+                                          isValidTarget: isValidTarget,
+                                          isHintTarget: isHintTarget,
+                                          hiddenTopCount: (game.animatingFromIndex == index) ? game.animatingCount : 0,
+                                          onTap: () => _handleInteraction(context, game, index),
+                                          width: tubeWidth,
+                                          ballSize: tubeWidth - 12,
+                                        ),
+                                      );
+                                   }).toList(),
+                                 )
+                               );
+                             }
+
+                             return Column(
+                               mainAxisSize: MainAxisSize.min,
+                               children: [
+                                 for (int i = 0; i < rows.length; i++) ...[
+                                   rows[i],
+                                   if (i < rows.length - 1) SizedBox(height: runSpacing),
+                                 ]
+                               ],
+                             );
                           }
                         ),
                       ),
