@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'game_screen.dart';
 import 'level_select_screen.dart';
 
@@ -35,9 +36,15 @@ class MenuScreen extends StatelessWidget {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const LevelSelectScreen()));
                }),
                const SizedBox(height: 20),
-               _buildMenuButton(context, "SETTINGS", Colors.orangeAccent, () {
-                  // Placeholder
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming Soon!")));
+               _buildMenuButton(context, "SETTINGS", Colors.orangeAccent, () async {
+                  // Reset Game State
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setInt('level', 1);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Game progress has been reset to Level 1!", style: TextStyle(color: Colors.white))),
+                    );
+                  }
                }),
              ],
           ),
