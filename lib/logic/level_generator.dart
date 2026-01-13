@@ -14,62 +14,84 @@ class LevelGenerator {
     Colors.purple,
   ];
 
+  /// Generates a valid, solvable level by creating random FULL tubes and verifying with Solver.
   static Future<GameState> generateLevel({
     required int numberOfColors,
     required int numberOfTubes,
     int tubeCapacity = 4,
     int levelNumber = 1,
   }) async {
-    // Try to generate a random solvable level
-    // We try multiple times because random shuffle might produce unsolvable states
     int attempts = 0;
-    while (attempts < 200) {
+    // Try up to 500 times to find a solvable random shuffle.
+    // Random shuffle ensures tubes are either FULL or EMPTY (no partials).
+    while (attempts < 500) {
       attempts++;
-      final state = _createRandomState(numberOfColors, numberOfTubes, tubeCapacity, levelNumber);
+      final state = _createRandomFullTubesState(numberOfColors, numberOfTubes, tubeCapacity, levelNumber);
       
-      // Don't accept if accidentally solved
+      // Fast check: If already solved (lucky shuffle), skip
       if (state.checkWinCondition) continue; 
       
-      // Optimization: Simple unwinnable check? 
-      // (e.g. if one color is buried at bottom of all tubes?)
-      // Solver handles it.
-      
-      final solution = Solver.solve(state);
-      if (solution != null && solution.isNotEmpty) {
-        return state;
+      // Verify solvability
+      try {
+        final solution = Solver.solve(state);
+        if (solution != null && solution.isNotEmpty) {
+          return state;
+        }
+      } catch (e) {
+        // In case solver crashes, ignore
+        continue;
       }
     }
     
-    // Fallback if random generation fails (very rare for loose constraints)
-    // Return a simple solvable state (e.g. solved with 1 move reversed)
-    return _generateSimpleFallback(numberOfColors, numberOfTubes, tubeCapacity, levelNumber);
+    // In the extremely rare case we fail, return a known simple state
+    // (A sorted state with 1 simple swap is guaranteed solvable and full-ish)
+    // But to ensure "FULL TUBES" strictly, we just return a solved state with a swap that maintains fullness?
+    // Swapping top balls of 2 full tubes maintains fullness.
+    return _generateGuaranteedFallback(numberOfColors, numberOfTubes, tubeCapacity, levelNumber);
   }
   
-  static GameState _generateSimpleFallback(int c, int t, int cap, int lvl) {
-      // Create solved
-      var state = _createRandomState(c, t, cap, lvl); // This generates full tubes
-      // Actually, if we want guaranteed solvable, we should generate solved then Scramble lightly?
-      // But Scramble lightly creates partial tubes.
-      // We will accept "partial tubes" ONLY in fallback scenario (better than crash).
-      // Or we accept the "likely solvable" random state.
-      // Users hate "unsolvable".
-      // Let's return the Last Generated state and hope? No.
-      // Let's generate a Very Easy one: 2 colors, 3 tubes.
-      // Just return a valid solvable layout.
-      // Let's use the Reverse Shuffle logic but ensure we fill tubes? Hard.
+  static GameState _generateGuaranteedFallback(int c, int t, int cap, int lvl) {
+      // 1. Create Solved State
+      List<Color> colorsUsed = _availableColors.sublist(0, c);
+      List<Tube> tubes = [];
       
-      // Best fallback: Return a trivial level.
-      return _createRandomState(c, t, cap, lvl); 
+      // Create N full tubes
+      for (int i = 0; i < t; i++) {
+        List<Ball> balls = [];
+        if (i < c) {
+           for(int k=0; k<cap; k++) {
+             balls.add(Ball.newBall(colorsUsed[i]));
+           }
+        }
+        tubes.add(Tube(id: i, balls: balls, capacity: cap));
+      }
+      
+      // 2. Perform a few valid swaps of Top Balls to mix it slightly
+      // Requires at least 1 empty tube (t > c)
+      if (t > c) {
+         // Swap Top of Tube 0 and Tube 1
+         if (c >= 2) {
+            // Move T0->Empty
+            tubes[c].balls.add(tubes[0].balls.removeLast());
+            // Move T1->T0
+             tubes[0].balls.add(tubes[1].balls.removeLast());
+            // Move Empty->T1
+             tubes[1].balls.add(tubes[c].balls.removeLast());
+         }
+      }
+      
+      return GameState(tubes: tubes, level: lvl);
   }
 
-  static GameState _createRandomState(int colorsCount, int tubesCount, int capacity, int levelNum) {
+  static GameState _createRandomFullTubesState(int colorsCount, int tubesCount, int capacity, int levelNum) {
      if (tubesCount < colorsCount + 1) {
-       tubesCount = colorsCount + 1;
+       tubesCount = colorsCount + 1; // Ensure 1 empty tube min
      }
      
      List<Color> colorsUsed = _availableColors.sublist(0, colorsCount);
      List<Ball> allBalls = [];
      
+     // Create pairs of balls
      for (var color in colorsUsed) {
        for (int i = 0; i < capacity; i++) {
          allBalls.add(Ball.newBall(color));
@@ -79,30 +101,23 @@ class LevelGenerator {
      allBalls.shuffle();
      
      List<Tube> tubes = [];
-     int ballIndex = 0;
      
+     // Fill tubes 0 to colorsCount-1 with balls. 
+     // Tubes colorsCount to end are empty.
+     
+     int ballIndex = 0;
      for (int i = 0; i < tubesCount; i++) {
        List<Ball> tubeBalls = [];
-       // Fill first 'colorsCount' tubes completely
-       // This mimics standard Ball Sort layout where we have N full tubes
-       // But wait, if we have Extra Empty Tubes greater than 1?
-       // We fill balls into the first K tubes until balls run out.
        
-       // Calculate how many tubes need to be full.
-       // We have colorsCount * capacity balls.
-       // We fill tubes until empty.
-       
-       for (int k = 0; k < capacity; k++) {
-         if (ballIndex < allBalls.length) {
-            tubeBalls.add(allBalls[ballIndex++]);
+       if (i < colorsCount) {
+         // This tube should be full
+         for (int k = 0; k < capacity; k++) {
+           if (ballIndex < allBalls.length) {
+              tubeBalls.add(allBalls[ballIndex++]);
+           }
          }
        }
-       
-       // If tube is not full but has balls? 
-       // This happens if balls count is not exact multiple? 
-       // Standard game: ball count = colors * capacity.
-       // So we will exactly fill 'colorsCount' tubes.
-       // Remaining tubes are empty.
+       // Else tube is empty
        
        tubes.add(Tube(id: i, balls: tubeBalls, capacity: capacity));
      }
