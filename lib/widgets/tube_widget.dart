@@ -53,12 +53,9 @@ class TubeWidget extends StatelessWidget {
                     size: Size(width, tubeHeight),
                     painter: _TubePainter(
                       glassColor: Colors.white.withValues(alpha: 0.05),
-                      borderColor: isHintTarget 
-                          ? Colors.purpleAccent 
-                          : (isValidTarget ? Colors.greenAccent.withValues(alpha: 0.8) : (isSelected ? Colors.amber.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.3))),
-                      borderWidth: (isValidTarget || isSelected || isHintTarget) ? 3 : 2,
-                      showShadow: isValidTarget || isHintTarget,
-                      shadowColor: isHintTarget ? Colors.purpleAccent.withValues(alpha: 0.6) : Colors.greenAccent.withValues(alpha: 0.3),
+                      borderColor: Colors.white.withValues(alpha: 0.3),
+                      borderWidth: 2,
+                      showShadow: false,
                     ),
                   ),
                 ),
