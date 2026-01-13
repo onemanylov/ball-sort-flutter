@@ -183,26 +183,23 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final toPos = toBox.localToGlobal(Offset.zero);
     
     // 2. Ball Details
-    // We can assume RenderBox size matches TubeWidget logic: 
-    // Tube Width is ~50-60.
-    // We need exact Ball size and positions. 
-    // This is tricky without exposing layout logic. 
-    // Approximation:
+    // Match TubeWidget logic exactly to align positions
     final double tubeWidth = fromBox.size.width;
-    final double ballSize = tubeWidth - 10;
+    
+    // Parameter passed to TubeWidget (from build method)
+    final double paramBallSize = tubeWidth - 12.0; 
+    
+    // Actual Visual Size of the ball (TubeWidget subtracts 10)
+    final double visualBallSize = paramBallSize - 10.0;
+    
+    // Stride for stacking (TubeWidget uses paramBallSize - 4)
+    final double stride = paramBallSize - 4.0;
     
     final ballsInFrom = game.state.tubes[from].balls.length;
     final ballsInTo = game.state.tubes[to].balls.length; // Before move
     
     // Top ball Y in From
-    // Note: TubeWidget uses Stack. bottom: 8.0 + index * ballSize
-    // In global coords: (Box Top + Box Height) - (bottom offset + ballSize)
-    // Actually easier: Box Top + Box Height - 8 - (index+1)*ballSize? No
-    
-    // Let's rely on standard calculation:
-    // Tube Height = ~ (Capacity * BallSize) + 16.0
-    // But TubeWidget might be taller due to "Lift".
-    // Let's use the bottom anchor.
+    // Note: TubeWidget uses Stack. bottom: 8.0 + index * stride
     
     final double bottomPadding = 8.0;
     
@@ -305,30 +302,37 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 double startY;
                 if (i == 0) {
                    // Top ball (Hovering) - already high up
-                   startY = fromPos.dy + (60 - 10 - ballSize); 
+                   // In TubeWidget, hover is at tubeHeight + 10.
+                   // Here we approximate or use the same relative logic.
+                   // Hover Top = BoxTop + (BoxHeight - (tubeHeight + 10) - visualBallSize)?
+                   // Actually, simpler: Hover is 10px above the visual top of the tube glass?
+                   // No, TubeWidget layout uses Stack from bottom. 
+                   // Hover Bottom = Tube Height + 10.
+                   // Tube Height in TubeWidget is calculated as (capacity * paramBallSize) + 32.
+                   double estimatedTubeHeight = (game.state.tubes[from].capacity * paramBallSize) + 32.0;
+                   double hoverBottom = estimatedTubeHeight + 10.0;
+                   // Box Height matches estimatedTubeHeight + 60 (hover space).
+                   // Let's rely on Box bottom.
+                   // Ball Top Global = Box Bottom Global - Hover Bottom - Visual Height.
+                   // Wait, Box Bottom is simply fromPos.dy + fromBox.size.height.
+                   // But stack alignment is bottomCenter.
+                   // So child bottom is relative to Box Bottom.
+                   
+                   startY = (fromPos.dy + fromBox.size.height) - hoverBottom - visualBallSize;
                 } else {
                    // Inside Ball
                    int ballIndex = ballsInFrom - 1 - i;
-                   double bottomOffset = 8.0 + (ballIndex * ballSize);
-                   startY = fromPos.dy + fromBox.size.height - bottomOffset - ballSize;
+                   double bottomOffset = 8.0 + (ballIndex * stride);
+                   startY = (fromPos.dy + fromBox.size.height) - bottomOffset - visualBallSize;
                 }
                 
-                double startX = fromPos.dx + (tubeWidth - ballSize) / 2;
-                double endX = toPos.dx + (tubeWidth - ballSize) / 2;
+                double startX = fromPos.dx + (tubeWidth - visualBallSize) / 2;
+                double endX = toPos.dx + (tubeWidth - visualBallSize) / 2;
                 
                 // Destination Y for THIS ball
-                // They stack up at destination. 
-                // Top ball (i=0) goes to highest pos. 
-                // Bottom ball (i=count-1) goes to lowest pos (on top of existing).
-                // Existing balls count = ballsInTo.
-                // Ball i will be at index = ballsInTo + (count - 1 - i).
-                // Example: Moving 2 balls to empty tube.
-                // i=0 (Top) -> becomes index 1.
-                // i=1 (Bottom) -> becomes index 0.
-                
                 int destIndex = ballsInTo + (count - 1 - i);
-                double destBottomOffset = 8.0 + (destIndex * ballSize);
-                double destY = toPos.dy + toBox.size.height - destBottomOffset - ballSize;
+                double destBottomOffset = 8.0 + (destIndex * stride);
+                double destY = (toPos.dy + toBox.size.height) - destBottomOffset - visualBallSize;
                 
                 double hoverY = (fromPos.dy < toPos.dy ? fromPos.dy : toPos.dy) - 50;
                 
@@ -348,7 +352,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 return Positioned(
                   left: currentX,
                   top: currentY,
-                  child: BallWidget(color: color, size: ballSize),
+                  child: BallWidget(color: color, size: visualBallSize),
                 );
              });
 

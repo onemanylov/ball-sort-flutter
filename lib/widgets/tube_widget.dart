@@ -75,9 +75,9 @@ class TubeWidget extends StatelessWidget {
                    
                    // Stacking Logic
                    // Visual Ball Size is (ballSize - 10).
-                   // We want a small gap (e.g. 3px).
-                   // Stride = VisualSize + Gap = (ballSize - 10) + 3 = ballSize - 7.
-                   double stride = ballSize - 7;
+                   // User wants "in between" gap (~6px).
+                   // Stride = VisualSize + Gap = (ballSize - 10) + 6 = ballSize - 4.
+                   double stride = ballSize - 4;
                    
                    // Lift bottom base to account for the round bottom of the tube
                    // Adjusted to 8.0 as requested
