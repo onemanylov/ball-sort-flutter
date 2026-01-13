@@ -91,7 +91,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                                   hiddenTopCount: (game.animatingFromIndex == index) ? game.animatingCount : 0,
                                   onTap: () => _handleInteraction(context, game, index),
                                   width: tubeWidth,
-                                  ballSize: tubeWidth - 14,
+                                  ballSize: tubeWidth - 12,
                                 );
                               }),
                             );

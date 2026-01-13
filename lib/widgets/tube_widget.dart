@@ -74,8 +74,8 @@ class TubeWidget extends StatelessWidget {
                    bool isHovering = isSelected && isTopBall;
                    
                    // Lift bottom base to account for the round bottom of the tube
-                   // Reduced from 12.0 to 5.0 to fix "weird padding"
-                   double bottomPos = 5.0 + (index * ballSize);
+                   // Adjusted to 8.0 as requested
+                   double bottomPos = 8.0 + (index * ballSize);
                    
                    if (isHovering) {
                      bottomPos = tubeHeight + 10.0; 
