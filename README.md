@@ -36,4 +36,4 @@ A beautiful, modern Ball Sort Puzzle game built with Flutter.
 
 ## Credits
 
-Developed by Antigravity.
+Developed with Antigravity.
