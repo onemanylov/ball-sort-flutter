@@ -50,9 +50,31 @@ class GameProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     
-    // Difficulty progression based on level
-    int c = colors ?? ((_currentLevel / 5).ceil() + 2).clamp(2, 6);
-    int t = tubes ?? (c + 2).clamp(4, 8);
+    // Difficulty progression
+    int c;
+    int t;
+    
+    if (colors != null) {
+      c = colors;
+      t = tubes ?? (c + 2);
+    } else {
+      if (_currentLevel <= 2) {
+        c = 2;
+        t = 3; // 2 filled + 1 empty
+      } else if (_currentLevel <= 4) {
+        c = 3;
+        t = 4; // 3 filled + 1 empty
+      } else {
+        // Level 5+:
+        // Level 5-9: 4 colors
+        // Level 10+: 5 colors (Max)
+        c = 3 + ((_currentLevel - 4) / 5).ceil();
+        if (c > 5) c = 5;
+        
+        // Standard Difficulty: 2 empty tubes
+        t = c + 2;
+      }
+    }
     
     _state = await LevelGenerator.generateLevel(
       numberOfColors: c, 
