@@ -43,26 +43,17 @@ class TubeWidget extends StatelessWidget {
               alignment: Alignment.bottomCenter,
               clipBehavior: Clip.none,
               children: [
-                // The Tube Glass
-                Container(
-                  height: tubeHeight,
-                  width: width,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
-                    ),
-                    border: Border.all(
-                      color: isHintTarget 
-                          ? Colors.purpleAccent 
-                          : (isValidTarget ? Colors.greenAccent.withValues(alpha: 0.8) : (isSelected ? Colors.amber.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.3))),
-                      width: (isValidTarget || isSelected || isHintTarget) ? 3 : 2,
-                    ),
-                    boxShadow: [
-                      if (isValidTarget) BoxShadow(color: Colors.greenAccent.withValues(alpha: 0.3), blurRadius: 10),
-                      if (isHintTarget) BoxShadow(color: Colors.purpleAccent.withValues(alpha: 0.6), blurRadius: 15, spreadRadius: 2),
-                    ],
+                // The Tube Glass (Custom Shape)
+                CustomPaint(
+                  size: Size(width, tubeHeight),
+                  painter: _TubePainter(
+                    glassColor: Colors.white.withValues(alpha: 0.05),
+                    borderColor: isHintTarget 
+                        ? Colors.purpleAccent 
+                        : (isValidTarget ? Colors.greenAccent.withValues(alpha: 0.8) : (isSelected ? Colors.amber.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.3))),
+                    borderWidth: (isValidTarget || isSelected || isHintTarget) ? 3 : 2,
+                    showShadow: isValidTarget || isHintTarget,
+                    shadowColor: isHintTarget ? Colors.purpleAccent.withValues(alpha: 0.6) : Colors.greenAccent.withValues(alpha: 0.3),
                   ),
                 ),
                 
@@ -103,5 +94,122 @@ class TubeWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _TubePainter extends CustomPainter {
+  final Color glassColor;
+  final Color borderColor;
+  final double borderWidth;
+  final bool showShadow;
+  final Color shadowColor;
+
+  _TubePainter({
+    required this.glassColor,
+    required this.borderColor,
+    required this.borderWidth,
+    this.showShadow = false,
+    this.shadowColor = Colors.transparent,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = glassColor
+      ..style = PaintingStyle.fill;
+      
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = borderWidth;
+      
+    if (showShadow) {
+      final shadowPaint = Paint()
+        ..color = shadowColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = borderWidth + 4
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+      
+      // Draw shadow path first
+      final shadowPath = _getTubePath(size);
+      canvas.drawPath(shadowPath, shadowPaint);
+    }
+    
+    final path = _getTubePath(size);
+    
+    // Draw Glass Fill
+    canvas.drawPath(path, paint);
+    
+    // Draw Border
+    canvas.drawPath(path, borderPaint);
+    
+    // Draw subtle reflection/shine
+    final shinePath = Path();
+    shinePath.moveTo(size.width * 0.2, 10);
+    shinePath.lineTo(size.width * 0.2, size.height - 20);
+    
+    final shinePaint = Paint()
+      ..shader = LinearGradient(
+        colors: [Colors.white.withValues(alpha: 0.1), Colors.transparent],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+      
+    canvas.drawPath(shinePath, shinePaint);
+  }
+  
+  Path _getTubePath(Size size) {
+    final path = Path();
+    final double lipHeight = 8.0;
+    final double lipOverhang = 4.0;
+    final double cornerRadius = size.width / 2; // Semi-circle bottom
+    
+    // Start Top Left Lip
+    path.moveTo(0, 0); // Top Left Outer
+    path.lineTo(size.width, 0); // Top Right Outer
+    path.lineTo(size.width, lipHeight); // Lip visual height (we don't cut back in, we just draw the boxish lip?)
+    
+    // Actually, user wants "Flask with Lip". 
+    // Usually: Wide top, necks in slightly? Or just straight tube with rim?
+    // "Tube" puzzle usually straight sides.
+    // Lip means:
+    //  ____
+    // |    |  <-- Rim
+    // |    |
+    // |    |
+    // |____|
+    
+    // Let's do:
+    // Move to Lip Top Left (-overhang) ? No, we are bounded by size.width.
+    // Let's assume size.width includes the lip.
+    // Main body is narrower.
+    
+    double bodyWidth = size.width - (lipOverhang * 2);
+    // Left Start of Lip
+    path.moveTo(0, 0);
+    path.lineTo(size.width, 0);
+    path.lineTo(size.width, lipHeight);
+    // Neck in
+    path.lineTo(size.width - lipOverhang, lipHeight); 
+    // Go down
+    path.lineTo(size.width - lipOverhang, size.height - cornerRadius);
+    // Arc Close Bottom
+    path.arcToPoint(
+      Offset(lipOverhang, size.height - cornerRadius),
+      radius: Radius.circular(cornerRadius),
+      clockwise: true,
+    );
+    // Go Up Left Side
+    path.lineTo(lipOverhang, lipHeight);
+    // Flare out
+    path.lineTo(0, lipHeight);
+    path.close();
+    
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(covariant _TubePainter oldDelegate) {
+     return oldDelegate.borderColor != borderColor || oldDelegate.borderWidth != borderWidth;
   }
 }
