@@ -1,39 +1,27 @@
 # Ball Sort Puzzle
 
-A beautiful, modern Ball Sort Puzzle game built with Flutter.
+A beautiful, addictive ball sorting puzzle game built with Flutter.
+
+![Game Screenshot](assets/screenshot.png)
 
 ## Features
 
-- **Dynamic Level Generation**: Infinite levels with increasing difficulty.
-- **Smart Solver**: Built-in solver for validation and Hints.
-- **Undo System**: Unlimited undo capabilities.
-- **Rich Aesthetics**: Glassmorphism design, smooth animations, and haptic feedback.
-- **Responsive**: Works on phones and tablets.
-- **Progress Saving**: Automatically saves your current level.
+- **Dynamic Gameplay**: Sort balls into tubes to clear the level.
+- **Balanced Generation**: Smart level generator ensures every puzzle is solvable and starts with full tubes.
+- **Beautiful UI**: Glassmorphism effects, dynamic animations, and a rich dark theme.
+- **Progress System**: Levels get progressively harder.
+- **Assistive Tools**: Undo moves, reset levels, and get hints if you're stuck.
 
-## Getting Started
+## Technologies
 
-1. **Install Dependencies**:
-   ```bash
-   flutter pub get
-   ```
+- Flutter & Dart
+- Provider for State Management
+- Custom Painters for Glassy Tubes
+- Recursive Solver for Hints and Validation
 
-2. **Run the App**:
-   ```bash
-   flutter run
-   ```
+## How to Play
 
-## Architecture
-
-- **Models**: `GameState`, `Tube`, `Ball` (Immutable with Equatable).
-- **Logic**: Pure Dart logic for Rules (`GameLogic`), Solving (`Solver`), and Generation (`LevelGenerator`).
-- **State Management**: `Provider` with `GameProvider` handling game loop and interaction.
-- **UI**: Custom widgets (`TubeWidget`, `BallWidget`) with animations.
-
-## Assets
-
-- App Icon: Located in `assets/icon.png`.
-
-## Credits
-
-Developed with Antigravity.
+1. Tap a tube to pick up the top ball.
+2. Tap another tube to drop the ball.
+3. You can only place a ball on top of a matching color or in an empty tube.
+4. Sort all balls by color to win!
