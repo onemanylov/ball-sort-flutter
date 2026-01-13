@@ -44,18 +44,12 @@ class BallWidget extends StatelessWidget {
   }
 
   String _getAssetPath(Color color) {
-    if (color == Colors.red) return 'assets/1.png';
-    if (color == Colors.blue) return 'assets/2.png';
-    if (color == Colors.green) return 'assets/3.png';
-    if (color == Colors.yellow) return 'assets/4.png';
-    if (color == Colors.purple) return 'assets/5.png';
-    if (color == Colors.orange) return 'assets/6.png';
-    if (color == Colors.pink) return 'assets/7.png';
-    if (color == Colors.teal) return 'assets/8.png';
-    // Fallbacks or extras
-    if (color == Colors.cyan) return 'assets/9.png';
-    if (color == Colors.lime) return 'assets/10.png';
+    if (color == Colors.red) return 'assets/RoundCandy_Strawberry.png';
+    if (color == Colors.blue) return 'assets/RoundCandy_Blueberry.png';
+    if (color == Colors.green) return 'assets/RoundCandy_Gauva.png';
+    if (color == Colors.yellow) return 'assets/RoundCandy_Mango.png';
+    if (color == Colors.purple) return 'assets/RoundCandy_JavaPlum.png';
     
-    return 'assets/1.png'; // Default
+    return 'assets/RoundCandy_Strawberry.png'; // Default fallback
   }
 }

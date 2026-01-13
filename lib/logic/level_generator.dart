@@ -11,10 +11,7 @@ class LevelGenerator {
     Colors.blue,
     Colors.green,
     Colors.yellow,
-    Colors.orange,
     Colors.purple,
-    Colors.teal,
-    Colors.pink,
   ];
 
   /// Generates a valid, solvable level
