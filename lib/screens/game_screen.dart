@@ -253,78 +253,108 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             // This is a race.
             // It's fine to start from "In Tube" position and fly up fast.
             
-            double startX = fromPos.dx + (tubeWidth - ballSize) / 2;
-            double startY = fromPos.dy + fromBox.size.height - bottomPadding - (ballsInFrom * ballSize); // Top of stack
-             // Wait, ballsInFrom includes the moving balls.
-             // If we move 2 balls, the top one is at index N-1, next at N-2.
-             // We should animate them as a cluster or individually? 
-             // "Group" moving together.
-             
-            double endX = toPos.dx + (tubeWidth - ballSize) / 2;
+            // Start Logic
+            // If i == 0 (Topmost ball), it was hovering.
+            // If i > 0, it was inside the tube.
             
-            // Destination Y: Stack up on existing balls
-            double destY = toPos.dy + toBox.size.height - bottomPadding - ((ballsInTo + count) * ballSize);
-            // This is where the TOP of the group will land.
-             
-            // Hover Height: 20px above the highest tube top
-            double hoverY = (fromPos.dy < toPos.dy ? fromPos.dy : toPos.dy) - 50; 
+            // From Box Top
+            double fromTopY = fromPos.dy;
+            double tubeHeight = fromBox.size.height; 
+            // Calculated hover Y (same as TubeWidget logic):
+            // TubeWidget uses bottomPos = tubeHeight + 10.0
+            // In Global Y: fromTopY + (tubeHeight - (tubeHeight + 10.0 + ballSize)) ?
+            // Wait, TubeWidget stack alignment is bottomCenter.
+            // Global Y of bottom anchor = fromTopY + tubeHeight.
+            // Hover Ball Bottom = Anchor - (tubeHeight + 10.0).
+            // Hover Ball Top = Anchor - (tubeHeight + 10.0) - ballSize.
+            // Simplify: Hover Ball Top = fromTopY + tubeHeight - tubeHeight - 10.0 - ballSize
+            // = fromTopY - 10.0 - ballSize. 
+            // So it floats 10px above the top edge of the box?
+            // Wait, TubeWidget actually adds height to the SizedBox to accommodate.
+            // RenderBox includes that height.
+            // If TubeWidget height = capacity*size + 16 + 60.
+            // The "Glass" is at bottom. glass height = capacity*size + 16.
+            // top of glass relative to box top = 60.
+            // Hover ball is at bottomPos = glassHeight + 10.
+            // Rel to bottom: glassHeight + 10.
+            // Rel to top of Box: BoxHeight - (glassHeight + 10) - ballSize.
+            // If BoxHeight = glassHeight + 60.
+            // Top = (glassHeight + 60) - glassHeight - 10 - ballSize
+            // Top = 50 - ballSize.
             
-            // Current X
-             double currentX = startX + (endX - startX) * animMove.value;
-             
-             // Current Y
-             // 1. Go to Hover
-             // 2. Stay at Hover
-             // 3. Drop
-             // We can interpolate.
-             
-             double currentY;
-             if (controller.value < 0.5) {
-                // Moving Up to Hover
-                // Simple lerp: StartY -> HoverY
-                // But we also move X during this?
-                // Better: 
-                // Y = (1-val)*StartDate + val*Hover
-                // But we want it to stay at Hover for the middle part.
+            // Standard Inside Ball:
+            // Index K (from bottom). 
+            // BottomPos = 8 + K*size.
+            // TopRelBox = BoxHeight - (8 + K*size) - ballSize.
+            
+            // Adjust loop to account for "ballsInFrom" indices.
+            // The top ball being moved is at index: ballsInFrom - 1.
+            // The next is at ballsInFrom - 2.
+            // Loop i goes from 0 to count-1.
+            // i=0 is top ball.
+            // Ball Index in Tube = ballsInFrom - 1 - i.
+            
+            double glassHeight = (fromBox.size.height - 60); // Approx based on new TubeWidget
+            // Actually relying on hard numbers is brittle but necessary if we can't ask TubeWidget.
+            // TubeWidget height logic: (capacity * size) + 16 + 60.
+            // Let's assume glass starts at offset 60 from top.
+            
+             // We need to render each ball individually because they have different startY
+             List<Widget> animatedBalls = List.generate(count, (i) {
+                double startY;
+                if (i == 0) {
+                   // Top ball (Hovering) - already high up
+                   startY = fromPos.dy + (60 - 10 - ballSize); 
+                } else {
+                   // Inside Ball
+                   int ballIndex = ballsInFrom - 1 - i;
+                   double bottomOffset = 8.0 + (ballIndex * ballSize);
+                   startY = fromPos.dy + fromBox.size.height - bottomOffset - ballSize;
+                }
                 
-                // Let's use explicit phases.
-             }
-             
-             // Simpler Math:
-             // Y = StartY * (1-up) + HoverY * up; (During up phase)
-             // Then drop phase takes over.
-             
-             double upProgress = animUp.value;
-             double dropProgress = animDrop.value;
-             
-             // Y Logic:
-             // Starts at StartY.
-             // Goes to HoverY based on upProgress.
-             // Stays at HoverY.
-             // Goes to DestY based on dropProgress.
-             
-             // Correct: Y = (StartY * (1-upProgress) + HoverY * upProgress) 
-             //          - ( (HoverY - DestY) * dropProgress ) ?
-             // Actually: 
-             // Pos = Lerp(Start, Hover, up) 
-             // If drop starts, Pos = Lerp(CurrentHover, Dest, drop)
-             // Since up finishes before drop finishes.
-             
-             double yPhase1 = startY + (hoverY - startY) * upProgress;
-             if (dropProgress > 0) {
-                currentY = yPhase1 + (destY - hoverY) * dropProgress; // Note: destY > hoverY usually
-             } else {
-                currentY = yPhase1;
-             }
+                double startX = fromPos.dx + (tubeWidth - ballSize) / 2;
+                double endX = toPos.dx + (tubeWidth - ballSize) / 2;
+                
+                // Destination Y for THIS ball
+                // They stack up at destination. 
+                // Top ball (i=0) goes to highest pos. 
+                // Bottom ball (i=count-1) goes to lowest pos (on top of existing).
+                // Existing balls count = ballsInTo.
+                // Ball i will be at index = ballsInTo + (count - 1 - i).
+                // Example: Moving 2 balls to empty tube.
+                // i=0 (Top) -> becomes index 1.
+                // i=1 (Bottom) -> becomes index 0.
+                
+                int destIndex = ballsInTo + (count - 1 - i);
+                double destBottomOffset = 8.0 + (destIndex * ballSize);
+                double destY = toPos.dy + toBox.size.height - destBottomOffset - ballSize;
+                
+                double hoverY = (fromPos.dy < toPos.dy ? fromPos.dy : toPos.dy) - 50;
+                
+                double currentX = startX + (endX - startX) * animMove.value;
+                
+                double upProgress = animUp.value;
+                double dropProgress = animDrop.value;
+                
+                double yPhase1 = startY + (hoverY - startY) * upProgress;
+                double currentY;
+                if (dropProgress > 0) {
+                   currentY = yPhase1 + (destY - hoverY) * dropProgress;
+                } else {
+                   currentY = yPhase1;
+                }
+                
+                return Positioned(
+                  left: currentX,
+                  top: currentY,
+                  child: BallWidget(color: color, size: ballSize),
+                );
+             });
 
-             return Positioned(
-                left: currentX,
-                top: currentY,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(count, (i) => BallWidget(color: color, size: ballSize)),
-                ),
+             return Stack(
+               children: animatedBalls,
              );
+
          } 
       );
     });

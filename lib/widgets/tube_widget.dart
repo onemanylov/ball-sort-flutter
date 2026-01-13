@@ -27,21 +27,7 @@ class TubeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine how many balls to lift if selected
-    int liftCount = 0;
-    if (isSelected && tube.balls.isNotEmpty) {
-      final topColor = tube.balls.last.color;
-      for (int i = tube.balls.length - 1; i >= 0; i--) {
-        if (tube.balls[i].color == topColor) {
-           liftCount++;
-        } else {
-          break;
-        }
-      }
-    }
-
     // Height calculation
-    // Tube height needs to fit capacity
     final tubeHeight = (tube.capacity * ballSize) + 16.0;
 
     return GestureDetector(
@@ -49,13 +35,10 @@ class TubeWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // If lifted, we need space above the tube so they don't get clipped or overlap weirdly if in a tight Stack.
-          // But here we'll just let them translate up. 
-          // However, using Stack with Clip.none is best.
-          
+          // Extra Space for the hovering ball
           SizedBox(
             width: width,
-            height: tubeHeight + 50, // Extra space for lift
+            height: tubeHeight + 60, // Sufficient space for hover
             child: Stack(
               alignment: Alignment.bottomCenter,
               clipBehavior: Clip.none,
@@ -65,7 +48,7 @@ class TubeWidget extends StatelessWidget {
                   height: tubeHeight,
                   width: width,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(30),
                       bottomRight: Radius.circular(30),
@@ -73,12 +56,12 @@ class TubeWidget extends StatelessWidget {
                     border: Border.all(
                       color: isHintTarget 
                           ? Colors.purpleAccent 
-                          : (isValidTarget ? Colors.greenAccent.withOpacity(0.8) : (isSelected ? Colors.amber.withOpacity(0.8) : Colors.white.withOpacity(0.3))),
+                          : (isValidTarget ? Colors.greenAccent.withValues(alpha: 0.8) : (isSelected ? Colors.amber.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.3))),
                       width: (isValidTarget || isSelected || isHintTarget) ? 3 : 2,
                     ),
                     boxShadow: [
-                      if (isValidTarget) BoxShadow(color: Colors.greenAccent.withOpacity(0.3), blurRadius: 10),
-                      if (isHintTarget) BoxShadow(color: Colors.purpleAccent.withOpacity(0.6), blurRadius: 15, spreadRadius: 2),
+                      if (isValidTarget) BoxShadow(color: Colors.greenAccent.withValues(alpha: 0.3), blurRadius: 10),
+                      if (isHintTarget) BoxShadow(color: Colors.purpleAccent.withValues(alpha: 0.6), blurRadius: 15, spreadRadius: 2),
                     ],
                   ),
                 ),
@@ -90,18 +73,17 @@ class TubeWidget extends StatelessWidget {
                      return const SizedBox.shrink();
                    }
 
-                   bool isLifted = false;
-                   if (isSelected) {
-                     // Check if this ball is part of the top group
-                     int distFromTop = (tube.balls.length - 1) - index;
-                     if (distFromTop < liftCount) {
-                       isLifted = true;
-                     }
-                   }
+                   // Selection Logic: ONLY the top ball hovers
+                   bool isTopBall = index == tube.balls.length - 1;
+                   bool isHovering = isSelected && isTopBall;
                    
                    double bottomPos = 8.0 + (index * ballSize);
-                   if (isLifted) {
-                     bottomPos += 30.0; 
+                   if (isHovering) {
+                     // Fly UP above the flask
+                     // Tube height is tubeHeight. We want to be above it.
+                     // Current bottomPos is relative to bottom of stack.
+                     // easy way: set bottomPos to tubeHeight + padding
+                     bottomPos = tubeHeight + 10.0; 
                    }
 
                    return AnimatedPositioned(
