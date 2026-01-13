@@ -48,8 +48,8 @@ class TubeWidget extends StatelessWidget {
                   child: CustomPaint(
                     size: Size(width, tubeHeight),
                     painter: _TubePainter(
-                      glassColor: Colors.purple.withValues(alpha: 0.15),
-                      borderColor: Colors.purple.withValues(alpha: 0.4),
+                      glassColor: const Color(0xFFB39DDB).withValues(alpha: 0.1),
+                      borderColor: const Color(0xFFB39DDB).withValues(alpha: 0.3),
                       borderWidth: 2,
                       showShadow: false,
                     ),
