@@ -74,7 +74,8 @@ class TubeWidget extends StatelessWidget {
                    bool isHovering = isSelected && isTopBall;
                    
                    // Lift bottom base to account for the round bottom of the tube
-                   double bottomPos = 12.0 + (index * ballSize);
+                   // Reduced from 12.0 to 5.0 to fix "weird padding"
+                   double bottomPos = 5.0 + (index * ballSize);
                    
                    if (isHovering) {
                      bottomPos = tubeHeight + 10.0; 
@@ -172,11 +173,11 @@ class _TubePainter extends CustomPainter {
     final path = Path();
     // Dimensions
     final double lipTotalWidth = size.width; 
-    final double lipHeight = 10.0;
-    final double lipOverhang = 6.0; // How much it sticks out
+    final double lipHeight = 8.0;
+    final double lipOverhang = 3.0; // Reduced to widen body space
     final double bodyWidth = size.width - (lipOverhang * 2);
     final double cornerRadiusLow = bodyWidth / 2; // Full round bottom
-    final double neckRadius = 4.0; // Smooth transition from lip to body
+    final double neckRadius = 3.0; // Smooth transition from lip to body
     
     // Start Top Left of Lip
     // We want rounded corners on the lip itself too? "No hard corners"
