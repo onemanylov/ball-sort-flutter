@@ -5,20 +5,16 @@ import 'ball_widget.dart';
 class TubeWidget extends StatelessWidget {
   final Tube tube;
   final bool isSelected;
-  final bool isValidTarget;
   final VoidCallback onTap;
   final double width;
   final double ballSize;
 
-  final bool isHintTarget;
   final int hiddenTopCount;
 
   const TubeWidget({
     Key? key,
     required this.tube,
     required this.isSelected,
-    this.isValidTarget = false,
-    this.isHintTarget = false,
     this.hiddenTopCount = 0,
     required this.onTap,
     this.width = 60,

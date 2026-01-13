@@ -112,8 +112,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                                           key: _tubeKeys[index],
                                           tube: tube,
                                           isSelected: isSelected,
-                                          isValidTarget: isValidTarget,
-                                          isHintTarget: isHintTarget,
                                           hiddenTopCount: (game.animatingFromIndex == index) ? game.animatingCount : 0,
                                           onTap: () => _handleInteraction(context, game, index),
                                           width: tubeWidth,
