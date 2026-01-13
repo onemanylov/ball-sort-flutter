@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'screens/menu_screen.dart';
 
 void main() {
@@ -18,6 +19,9 @@ class BallSortApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: const Color(0xFF1E1E2C),
         useMaterial3: true,
+        textTheme: GoogleFonts.fredokaTextTheme(
+          ThemeData(brightness: Brightness.dark).textTheme,
+        ),
       ),
       home: const MenuScreen(),
     );

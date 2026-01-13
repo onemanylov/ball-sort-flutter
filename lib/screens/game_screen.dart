@@ -93,14 +93,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                                    mainAxisAlignment: MainAxisAlignment.center,
                                    children: chunkIndices.map((index) {
                                       final tube = game.state.tubes[index];
-                                      final isSelected = game.selectedTubeIndex == index;
-                                      
-                                      bool isValidTarget = false;
-                                      if (game.selectedTubeIndex != null && game.selectedTubeIndex != index) {
-                                        isValidTarget = GameLogic.isValidMove(game.state, game.selectedTubeIndex!, index);
-                                      }
-                                      
-                                      final isHintTarget = game.hintTargetIndex == index;
+                                      bool isSelected = game.selectedTubeIndex == index;
                                       
                                       if (!_tubeKeys.containsKey(index)) {
                                         _tubeKeys[index] = GlobalKey();
@@ -193,6 +186,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               IconButton(icon: const Icon(Icons.undo), color: Colors.white, onPressed: game.undo, tooltip: "Undo"),
               IconButton(icon: const Icon(Icons.refresh), color: Colors.white, onPressed: game.resetLevel, tooltip: "Reset"),
               IconButton(icon: const Icon(Icons.lightbulb_outline), color: Colors.amber, onPressed: game.getHint, tooltip: "Hint"),
+              IconButton(icon: const Icon(Icons.home), color: Colors.white, onPressed: () => Navigator.of(context).pop(), tooltip: "Home"),
             ],
           )
         ],

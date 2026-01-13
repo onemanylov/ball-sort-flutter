@@ -152,21 +152,7 @@ class _TubePainter extends CustomPainter {
     canvas.drawPath(path, paint);
     canvas.drawPath(path, borderPaint);
     
-    // Shine
-    final shinePath = Path();
-    shinePath.moveTo(size.width * 0.25, 12);
-    shinePath.lineTo(size.width * 0.25, size.height - 25);
-    final shinePaint = Paint()
-      ..shader = LinearGradient(
-        colors: [Colors.white.withValues(alpha: 0.15), Colors.transparent],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round; // Round shine ends
-      
-    canvas.drawPath(shinePath, shinePaint);
+    // Shine removed as requested
   }
   
   Path _getTubePath(Size size) {
