@@ -73,9 +73,15 @@ class TubeWidget extends StatelessWidget {
                    bool isTopBall = index == tube.balls.length - 1;
                    bool isHovering = isSelected && isTopBall;
                    
+                   // Stacking Logic
+                   // Visual Ball Size is (ballSize - 10).
+                   // We want a small gap (e.g. 3px).
+                   // Stride = VisualSize + Gap = (ballSize - 10) + 3 = ballSize - 7.
+                   double stride = ballSize - 7;
+                   
                    // Lift bottom base to account for the round bottom of the tube
                    // Adjusted to 8.0 as requested
-                   double bottomPos = 8.0 + (index * ballSize);
+                   double bottomPos = 8.0 + (index * stride);
                    
                    if (isHovering) {
                      bottomPos = tubeHeight + 10.0; 
@@ -85,12 +91,10 @@ class TubeWidget extends StatelessWidget {
                      duration: const Duration(milliseconds: 200),
                      curve: Curves.easeOutBack,
                      bottom: bottomPos,
-                     // Center horizontally based on new size
-                     left: (width - (ballSize - 3)) / 2, 
+                     left: (width - (ballSize - 10)) / 2, // Center horizontally
                      child: BallWidget(
                        color: tube.balls[index].color,
-                       // Reduce gap to 3px (was 10px padding before)
-                       size: ballSize - 3, 
+                       size: ballSize - 10, 
                      ),
                    );
                 }),
